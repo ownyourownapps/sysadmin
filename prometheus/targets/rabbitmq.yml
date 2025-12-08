@@ -1,0 +1,9 @@
+# RabbitMQ metrics target
+# RabbitMQ from pmc/wpp-infra stack running on host
+
+- targets:
+    - 'host.docker.internal:15692'
+  labels:
+    job: 'rabbitmq'
+    stack: 'pmc'
+

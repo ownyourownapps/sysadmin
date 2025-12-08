@@ -17,34 +17,18 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
 
-  # Exemplo de alvos externos publicados em host para outras stacks
-  - job_name: wpp-apps
-    static_configs:
-      - targets:
-          - 'host.docker.internal:9101' # chaos-socket
-          - 'host.docker.internal:9102' # communicator
-          - 'host.docker.internal:9103' # command
-          - 'host.docker.internal:9104' # data-processor
-          - 'host.docker.internal:9105' # retriever
-
-  - job_name: wpp-postgres-exporter
-    static_configs:
-      - targets:
-          - 'host.docker.internal:9187' # v0
-          - 'host.docker.internal:9188' # v1
-
-  - job_name: rabbitmq
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['host.docker.internal:15692']
-
   # Service Discovery via arquivos: permite adicionar novos targets sem recriar o container
-  # Crie arquivos YAML em ./prometheus/targets/ com formato:
+  # Targets são definidos em arquivos YAML em ./prometheus/targets/
+  # Exemplos: wpp-infra.yml, rabbitmq.yml
+  # Formato dos arquivos:
   # - targets: ['servico:porta']
   #   labels:
   #     job: 'meu-job'
+  #     stack: 'minha-stack'
   - job_name: extra-targets
     file_sd_configs:
       - files:
           - /etc/prometheus/targets/*.yml
+    # Reload interval for file-based service discovery
+    refresh_interval: 15s
 

@@ -81,8 +81,10 @@
 
 ## Promtail
 
-### O que é o "patch" no final do arquivo?
-- **Resposta**: Isso parece ser um artefato de edição. O arquivo deveria terminar após a linha 26 (pipeline_stages). O texto "*** End Patch" não é válido em YAML e deve ser removido.
+### Configuração
+- Promtail está configurado para coletar logs de todos os containers do projeto `sysadmin`
+- Os logs são enviados automaticamente para Loki
+- Para coletar logs de outros projetos, atualize o filtro em `promtail/promtail-config.yml`
 
 ## Middlewares Traefik
 
