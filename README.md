@@ -29,3 +29,16 @@ Stack central de infraestrutura para um único host (docker compose) com:
 ## Dashboards
 - Provisionamento via `grafana/dashboards` e datasources em `grafana/datasources`.
 - Inclui dashboard resumido `load-test-dashboard-summary.json`. Você pode adicionar mais arquivos na pasta.
+
+## Documentação Adicional
+- `docs/loki-usage.md` - Como usar Loki para visualizar logs
+- `docs/prometheus-targets.md` - Como adicionar novos targets ao Prometheus
+- `QUESTIONS_ANSWERS.md` - Respostas a dúvidas comuns sobre configuração
+
+## Comandos Úteis
+- `make up` - Iniciar todos os serviços
+- `make down` - Parar todos os serviços
+- `make health-check` - Verificar saúde dos serviços
+- `make open-grafana` - Abrir Grafana no navegador
+- `make open-prometheus` - Abrir Prometheus no navegador
+- `make debug` - Iniciar com serviços de debug (whoami)
