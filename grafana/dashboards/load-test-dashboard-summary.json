@@ -1,0 +1,445 @@
+{
+  "title": "WPP Load Test Dashboard - Summary",
+  "tags": ["load-test", "wpp", "summary"],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "version": 1,
+  "refresh": "5s",
+  "uid": "load-test-dashboard-summary",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Chaos Socket: Total de Mensagens Enviadas",
+      "type": "stat",
+      "description": "Total acumulado de mensagens enviadas pelo Chaos Socket",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(chaos_socket_messages_sent_total{status=\"success\"})",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "blue", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Chaos Socket: Taxa de Mensagens (msg/s)",
+      "type": "stat",
+      "description": "Taxa atual de mensagens enviadas por segundo",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(rate(chaos_socket_messages_sent_total{status=\"success\"}[5m]))",
+          "legendFormat": "Taxa Atual"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Chaos Socket: Conexões Ativas",
+      "type": "stat",
+      "description": "Número de conexões WebSocket ativas",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0},
+      "targets": [
+        {
+          "expr": "chaos_socket_active_connections",
+          "legendFormat": "Conexões"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "blue", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Chaos Socket: Mensagens Enviadas via API",
+      "type": "stat",
+      "description": "Total acumulado de mensagens enviadas via HTTP API endpoint",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 6},
+      "targets": [
+        {
+          "expr": "sum(chaos_socket_messages_sent_via_api_total{status=\"success\"})",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "orange", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "V0: Mensagens Recebidas",
+      "type": "stat",
+      "description": "Total de mensagens recebidas pelo wpp-retriever",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 6},
+      "targets": [
+        {
+          "expr": "sum(wpp_retriever_messages_received_total{status=\"success\"})",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "blue", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "V0: Taxa Atual (msg/s)",
+      "type": "stat",
+      "description": "Taxa atual de processamento de mensagens",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(wpp_retriever_messages_received_total{status=\"success\"}[5m]))",
+          "legendFormat": "Taxa Atual"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "V0: Total no Banco (wppdb_v0)",
+      "type": "stat",
+      "description": "Total de mensagens persistidas na tabela messages (architecture='v0')",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "pg_stat_user_tables_n_live_tup{datname=\"wppdb_v0\",relname=\"messages\"}",
+          "legendFormat": "Total no Banco"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "V1: Mensagens Recebidas (Processadas)",
+      "type": "stat",
+      "description": "Total de mensagens processadas pelo wpp-data-processor",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 12},
+      "targets": [
+        {
+          "expr": "sum(wpp_data_processor_messages_processed_total{status=\"success\"})",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "purple", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "V1: Taxa Atual (msg/s)",
+      "type": "stat",
+      "description": "Taxa atual de processamento de mensagens",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 12},
+      "targets": [
+        {
+          "expr": "sum(rate(wpp_data_processor_messages_processed_total{status=\"success\"}[5m]))",
+          "legendFormat": "Taxa Atual"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "V1: Total no Banco (wppdb_v1)",
+      "type": "stat",
+      "description": "Total de mensagens persistidas na tabela message_metadata (architecture='v1')",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 18},
+      "targets": [
+        {
+          "expr": "pg_stat_user_tables_n_live_tup{datname=\"wppdb_v1\",relname=\"message_metadata\"}",
+          "legendFormat": "Total no Banco"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "PostgreSQL: Conexões Ativas",
+      "type": "stat",
+      "description": "Número de conexões ativas no PostgreSQL",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 18},
+      "targets": [
+        {
+          "expr": "sum(pg_stat_activity_count{datname=~\"wppdb.*\"})",
+          "legendFormat": "Conexões Ativas"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 50},
+              {"color": "red", "value": 100}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "PostgreSQL: Transações por Segundo",
+      "type": "stat",
+      "description": "Taxa de transações commitadas no banco",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 18},
+      "targets": [
+        {
+          "expr": "sum(rate(pg_stat_database_xact_commit{datname=~\"wppdb.*\"}[5m]))",
+          "legendFormat": "Commits/s"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "sparkline"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Comparação: Throughput V0 vs V1",
+      "type": "timeseries",
+      "description": "Comparação do throughput (mensagens por segundo) entre V0 e V1",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "targets": [
+        {
+          "expr": "sum(rate(wpp_retriever_messages_received_total{status=\"success\"}[1m]))",
+          "legendFormat": "V0: wpp-retriever"
+        },
+        {
+          "expr": "sum(rate(wpp_data_processor_messages_processed_total{status=\"success\"}[1m]))",
+          "legendFormat": "V1: wpp-data-processor"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Comparação: Latência V0 vs V1 (p95)",
+      "type": "timeseries",
+      "description": "Comparação da latência de persistência (p95) entre V0 e V1",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(wpp_retriever_persistence_latency_seconds_bucket[5m]))",
+          "legendFormat": "V0: wpp-retriever (p95)"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(wpp_data_processor_persistence_latency_seconds_bucket[5m]))",
+          "legendFormat": "V1: wpp-data-processor (p95)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        }
+      }
+    }
+  ],
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {}
+}
+
