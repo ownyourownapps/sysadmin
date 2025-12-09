@@ -44,13 +44,14 @@ services:
       - ./letsencrypt:/letsencrypt
     labels:
       - traefik.enable=true
-      - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)
+      # Dashboard router rule must match /api and /dashboard paths
+      # See: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/
+      - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.tls=true
       - traefik.http.routers.dashboard.tls.certresolver=le
-      # Temporarily removed secure-headers to test
-      # - traefik.http.routers.dashboard.middlewares=secure-headers
+      - traefik.http.routers.dashboard.middlewares=secure-headers
       # Middlewares globais reutilizáveis
       # IP Allowlist: restringe acesso por IP (configurável via .env)
       # Nota: Quando usando Cloudflare como proxy, o middleware ip-allowlist pode bloquear acesso
