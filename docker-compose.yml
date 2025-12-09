@@ -48,6 +48,9 @@ services:
       - traefik.http.routers.dashboard.middlewares=secure-headers,ip-allowlist
       # Middlewares globais reutilizáveis
       # IP Allowlist: restringe acesso por IP (configurável via .env)
+      # Nota: Quando usando Cloudflare como proxy, o middleware ip-allowlist pode bloquear acesso
+      # pois verifica o IP da conexão (Cloudflare) e não o IP real do cliente (CF-Connecting-IP)
+      # Solução: Remover middleware dos serviços acessados via Cloudflare ou configurar IP_ALLOWLIST vazio
       - traefik.http.middlewares.ip-allowlist.ipallowlist.sourceRange=${IP_ALLOWLIST:-127.0.0.1/32,192.168.0.0/16,10.0.0.0/8}
       - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
       - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
@@ -99,7 +102,7 @@ services:
       - traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_DOMAIN}`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.tls.certresolver=le
-      - traefik.http.routers.prometheus.middlewares=secure-headers,ip-allowlist
+      - traefik.http.routers.prometheus.middlewares=secure-headers
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   grafana:
@@ -130,7 +133,7 @@ services:
       - traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN}`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls.certresolver=le
-      - traefik.http.routers.grafana.middlewares=secure-headers,ip-allowlist
+      - traefik.http.routers.grafana.middlewares=secure-headers
       - traefik.http.services.grafana.loadbalancer.server.port=3000
 
   node-exporter:
@@ -181,7 +184,7 @@ services:
       - traefik.http.routers.loki.rule=Host(`${LOKI_DOMAIN}`)
       - traefik.http.routers.loki.entrypoints=websecure
       - traefik.http.routers.loki.tls.certresolver=le
-      - traefik.http.routers.loki.middlewares=secure-headers,ip-allowlist
+      - traefik.http.routers.loki.middlewares=secure-headers
       - traefik.http.services.loki.loadbalancer.server.port=3100
 
   promtail:
