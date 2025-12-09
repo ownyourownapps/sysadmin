@@ -44,9 +44,10 @@ services:
       - ./letsencrypt:/letsencrypt
     labels:
       - traefik.enable=true
-      # Dashboard router rule must match /api and /dashboard paths
+      # Dashboard router rule - Host-based rule (recommended by Traefik docs)
       # See: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/
-      - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      # Dashboard is available at /dashboard/ (trailing slash required)
+      - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.tls=true
