@@ -49,7 +49,8 @@ services:
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.tls=true
       - traefik.http.routers.dashboard.tls.certresolver=le
-      - traefik.http.routers.dashboard.middlewares=secure-headers
+      # Temporarily removed secure-headers to test
+      # - traefik.http.routers.dashboard.middlewares=secure-headers
       # Middlewares globais reutilizáveis
       # IP Allowlist: restringe acesso por IP (configurável via .env)
       # Nota: Quando usando Cloudflare como proxy, o middleware ip-allowlist pode bloquear acesso
