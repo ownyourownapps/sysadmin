@@ -25,10 +25,12 @@ scrape_configs:
   #   labels:
   #     job: 'meu-job'
   #     stack: 'minha-stack'
+  # Nota: wpp-command-processor.yml é excluído pois tem job separado com metrics_path diferente
   - job_name: extra-targets
     file_sd_configs:
       - files:
-          - /etc/prometheus/targets/*.yml
+          - /etc/prometheus/targets/wpp-infra.yml
+          - /etc/prometheus/targets/rabbitmq.yml
         # Reload interval for file-based service discovery (default: 5m, but we set to 15s for faster updates)
         refresh_interval: 15s
 
