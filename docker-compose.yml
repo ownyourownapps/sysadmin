@@ -27,6 +27,9 @@ services:
       - --entryPoints.websecure.http.tls=true
       - --entryPoints.web.http.redirections.entryPoint.to=websecure
       - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      # Trust forwarded headers from Cloudflare
+      - --entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0
+      - --entryPoints.web.forwardedHeaders.trustedIPs=0.0.0.0/0
       - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
