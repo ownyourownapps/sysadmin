@@ -29,6 +29,16 @@ scrape_configs:
     file_sd_configs:
       - files:
           - /etc/prometheus/targets/*.yml
-    # Reload interval for file-based service discovery
-    refresh_interval: 15s
+        # Reload interval for file-based service discovery (default: 5m, but we set to 15s for faster updates)
+        refresh_interval: 15s
+
+  # Command Processor (Spring Boot Actuator - precisa de metrics_path diferente)
+  # Arquivo separado: wpp-command-processor.yml
+  - job_name: wpp-command-processor
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/wpp-command-processor.yml
+        refresh_interval: 15s
+    # Spring Boot Actuator usa /actuator/prometheus ao invés de /metrics
+    metrics_path: /actuator/prometheus
 

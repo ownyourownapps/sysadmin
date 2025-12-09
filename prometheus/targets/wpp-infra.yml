@@ -5,7 +5,6 @@
 - targets:
     - 'host.docker.internal:9101'  # chaos-socket
     - 'host.docker.internal:9102'  # communicator
-    - 'host.docker.internal:9103'  # command-processor
     - 'host.docker.internal:9104'  # data-processor
     - 'host.docker.internal:9105'  # retriever
   labels:
