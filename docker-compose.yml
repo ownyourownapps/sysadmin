@@ -17,7 +17,7 @@ services:
     image: traefik:v3.6.2
     container_name: traefik
     command:
-      - --api.insecure=false
+      - --api.insecure=true
       - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -46,12 +46,10 @@ services:
       - traefik.enable=true
       - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
-      - traefik.http.routers.dashboard.service=dashboard
+      - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.tls=true
       - traefik.http.routers.dashboard.tls.certresolver=le
       - traefik.http.routers.dashboard.middlewares=secure-headers
-      # Service definition for dashboard (explicit port 8080)
-      - traefik.http.services.dashboard.loadbalancer.server.port=8080
       # Middlewares globais reutilizáveis
       # IP Allowlist: restringe acesso por IP (configurável via .env)
       # Nota: Quando usando Cloudflare como proxy, o middleware ip-allowlist pode bloquear acesso
