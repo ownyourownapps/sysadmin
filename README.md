@@ -4,6 +4,25 @@ Stack central de infraestrutura para um único host (docker compose) com:
 - Reverse proxy Traefik + Cloudflared (DNS challenge Cloudflare)
 - Observabilidade: Prometheus, Grafana, Loki, Promtail, node-exporter, cAdvisor
 
+## Serviços e suas funções
+
+### Reverse Proxy e Túnel
+- **Traefik**: Reverse proxy moderno que roteia requisições HTTP/HTTPS, gerencia certificados SSL/TLS automaticamente via Let's Encrypt, e expõe dashboards e serviços através de subdomínios configurados.
+- **Cloudflared**: Túnel Cloudflare que permite expor serviços de forma segura sem abrir portas diretamente no firewall, mantendo os serviços protegidos atrás da rede Cloudflare.
+
+### Observabilidade - Métricas
+- **Prometheus**: Sistema de monitoramento e alertas que coleta e armazena métricas de tempo de série. Scrape métricas de diversos serviços e exportadores.
+- **Grafana**: Plataforma de visualização e análise que permite criar dashboards interativos para visualizar métricas do Prometheus e logs do Loki.
+- **node-exporter**: Exportador Prometheus que coleta métricas do sistema operacional (CPU, memória, disco, rede) do host.
+- **cAdvisor**: Exportador Prometheus que coleta métricas de uso de recursos (CPU, memória, I/O) dos containers Docker em execução.
+
+### Observabilidade - Logs
+- **Loki**: Sistema de agregação de logs projetado para ser altamente escalável e econômico. Armazena logs coletados pelo Promtail.
+- **Promtail**: Agente de coleta de logs que monitora arquivos de log e envia os dados para o Loki. Configurado para coletar logs de containers Docker.
+
+### Utilitários
+- **whoami**: Serviço de teste/debug que retorna informações sobre requisições HTTP recebidas. Útil para validar configuração do Traefik.
+
 ## Como usar
 1. Copie `env.example` para `.env` e preencha:
    - `ACME_EMAIL`, `CF_DNS_API_TOKEN`, `CLOUDFLARE_TUNNEL_TOKEN`
