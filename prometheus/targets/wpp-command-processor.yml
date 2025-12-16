@@ -1,0 +1,9 @@
+# Command Processor (Spring Boot Actuator - endpoint diferente)
+# Este arquivo é separado porque precisa de metrics_path=/actuator/prometheus
+# que é definido no prometheus.yml no job wpp-command-processor
+- targets:
+    - 'host.docker.internal:9103'  # command-processor
+  labels:
+    job: 'wpp-command-processor'
+    stack: 'pmc'
+

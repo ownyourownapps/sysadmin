@@ -1,0 +1,51 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    scrape_timeout: 12s
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  - job_name: traefik
+    static_configs:
+      - targets: ['traefik:8082']
+    metrics_path: /metrics
+
+  # Service Discovery via arquivos: permite adicionar novos targets sem recriar o container
+  # Targets são definidos em arquivos YAML em ./prometheus/targets/
+  # Exemplos: wpp-infra.yml, rabbitmq.yml
+  # Formato dos arquivos:
+  # - targets: ['servico:porta']
+  #   labels:
+  #     job: 'meu-job'
+  #     stack: 'minha-stack'
+  # Nota: wpp-command-processor.yml é excluído pois tem job separado com metrics_path diferente
+  - job_name: extra-targets
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/wpp-infra.yml
+          - /etc/prometheus/targets/rabbitmq.yml
+        # Reload interval for file-based service discovery (default: 5m, but we set to 15s for faster updates)
+        refresh_interval: 15s
+
+  # Command Processor (Spring Boot Actuator - precisa de metrics_path diferente)
+  # Arquivo separado: wpp-command-processor.yml
+  - job_name: wpp-command-processor
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/wpp-command-processor.yml
+        refresh_interval: 15s
+    # Spring Boot Actuator usa /actuator/prometheus ao invés de /metrics
+    metrics_path: /actuator/prometheus
+

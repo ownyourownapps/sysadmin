@@ -1,0 +1,21 @@
+# WPP Infrastructure targets
+# Services from pmc/wpp-infra stack running on host
+
+# WPP Applications
+- targets:
+    - 'host.docker.internal:9101'  # chaos-socket
+    - 'host.docker.internal:9102'  # communicator
+    - 'host.docker.internal:9104'  # data-processor
+    - 'host.docker.internal:9105'  # retriever
+  labels:
+    job: 'wpp-apps'
+    stack: 'pmc'
+
+# PostgreSQL Exporters
+- targets:
+    - 'host.docker.internal:9187'  # postgres-exporter-v0
+    - 'host.docker.internal:9188'  # postgres-exporter-v1
+  labels:
+    job: 'wpp-postgres-exporter'
+    stack: 'pmc'
+
