@@ -5,29 +5,49 @@ networks:
     driver: bridge
 
 volumes:
-  letsencrypt:
   prometheus_data:
   grafana_data:
   loki_data:
 
 services:
+  # Based on https://doc.traefik.io/traefik/setup/docker/
   traefik:
     image: traefik:v3.6.2
     container_name: traefik
     command:
-      - --api.insecure=true
-      - --api.dashboard=true
+      # EntryPoints
+      - --entrypoints.web.address=:80
+      - --entryPoints.web.http.redirections.entryPoint.to=websecure
+      - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --entrypoints.websecure.address=:443
+      - --entryPoints.websecure.http.tls=true
+      # this is needed for cloudflare to work
+      - --entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0
+      - --entryPoints.web.forwardedHeaders.trustedIPs=0.0.0.0/0
+      # Dedicated metrics entry point
+      - --entrypoints.metrics.address=:8082
+
+      # Providers
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=traefik
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --entryPoints.websecure.http.tls=true
-      - --entryPoints.web.http.redirections.entryPoint.to=websecure
-      - --entryPoints.web.http.redirections.entryPoint.scheme=https
-      # Trust forwarded headers from Cloudflare
-      - --entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0
-      - --entryPoints.web.forwardedHeaders.trustedIPs=0.0.0.0/0
+      
+      # API & Dashboard       
+      - --api.dashboard=true
+      - --api.insecure=false
+
+      # Observability 
+      - "--log.level=INFO"
+      - "--accesslog=true"
+
+      # Metrics
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=metrics"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.addserviceslabels=true"
+
+      # TLS Certificate Management (Let's Encrypt)
       - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
@@ -41,22 +61,26 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
     labels:
+      # Enable Traefik
       - traefik.enable=true
-      # Dashboard router rule - Host-based rule (recommended by Traefik docs)
-      # See: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/
-      # Dashboard is available at /dashboard/ (trailing slash required)
+      
+      # Dashboard router
       - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.tls=true
+
       - traefik.http.routers.dashboard.tls.certresolver=le
       - traefik.http.routers.dashboard.middlewares=secure-headers
-      # Middlewares globais reutilizáveis
-      # IP Allowlist: restringe acesso por IP (configurável via .env)
-      # Nota: Quando usando Cloudflare como proxy, o middleware ip-allowlist pode bloquear acesso
-      # pois verifica o IP da conexão (Cloudflare) e não o IP real do cliente (CF-Connecting-IP)
-      # Solução: Remover middleware dos serviços acessados via Cloudflare ou configurar IP_ALLOWLIST vazio
-      - traefik.http.middlewares.ip-allowlist.ipallowlist.sourceRange=${IP_ALLOWLIST:-127.0.0.1/32,192.168.0.0/16,10.0.0.0/8}
+      
+      # Basic‑auth middleware
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=#{BASIC_AUTH_HASH}"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
+
+      # Middleware ip-allowlist
+      - traefik.http.middlewares.ip-allowlist.ipallowlist.sourceRange=${IP_ALLOWLIST}
+      
+      # Middleware secure-headers
       - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
       - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
       - traefik.http.middlewares.secure-headers.headers.frameDeny=true
@@ -68,150 +92,10 @@ services:
     networks:
       - traefik
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: traefik-cloudflared
-    entrypoint: cloudflared
-    command:
-      - --no-autoupdate
-      - tunnel
-      - run
-      - --token
-      - ${CLOUDFLARE_TUNNEL_TOKEN}
-    restart: unless-stopped
-    networks:
-      - traefik
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: sysadmin-prometheus
-    # Porta removida - acesso apenas via Traefik (porta 9090 já está em uso pelo wpp-infra)
-    volumes:
-      # Volume persistente: Prometheus armazena dados de séries temporais aqui
-      - prometheus_data:/prometheus
-      # Configuração principal
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      # Service discovery: adicione arquivos YAML aqui para novos targets
-      - ./prometheus/targets:/etc/prometheus/targets
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-    # Permite acesso a serviços no host (ex: RabbitMQ na porta 15692)
-    extra_hosts:
-      - host.docker.internal:host-gateway
-    networks:
-      - observability
-      - traefik
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_DOMAIN}`)
-      - traefik.http.routers.prometheus.entrypoints=websecure
-      - traefik.http.routers.prometheus.tls.certresolver=le
-      - traefik.http.routers.prometheus.middlewares=secure-headers
-      - traefik.http.services.prometheus.loadbalancer.server.port=9090
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: sysadmin-grafana
-    # Porta removida - acesso apenas via Traefik (porta 3000 já está em uso pelo wpp-infra)
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
-      # Plugins do Grafana (ex: "grafana-piechart-panel,grafana-clock-panel"). Vazio = sem plugins extras
-      GF_INSTALL_PLUGINS: ""
-    volumes:
-      # Volume persistente: dashboards criados na UI, datasources, usuários, etc.
-      - grafana_data:/var/lib/grafana
-      # Provisionamento: diz ao Grafana onde procurar dashboards JSON
-      - ./grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
-      - ./grafana/dashboards/load-test-dashboard-summary.json:/var/lib/grafana/dashboards/load-test-dashboard-summary.json
-      - ./grafana/dashboards/load-test-dashboard-expanded.json:/var/lib/grafana/dashboards/load-test-dashboard-expanded.json
-      # Provisionamento de datasources (Prometheus, Loki)
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
-    networks:
-      - observability
-      - traefik
-    depends_on:
-      - prometheus
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN}`)
-      - traefik.http.routers.grafana.entrypoints=websecure
-      - traefik.http.routers.grafana.tls.certresolver=le
-      - traefik.http.routers.grafana.middlewares=secure-headers
-      - traefik.http.services.grafana.loadbalancer.server.port=3000
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: sysadmin-node-exporter
-    pid: host
-    # NÃO precisa expor porta - Prometheus acessa via rede Docker (node-exporter:9100)
-    restart: unless-stopped
-    command:
-      - --path.rootfs=/host
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-    volumes:
-      - /:/host:ro,rslave
-    networks:
-      - observability
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: sysadmin-cadvisor
-    # NÃO precisa expor porta - Prometheus acessa via rede Docker (cadvisor:8080)
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    networks:
-      - observability
-
-  loki:
-    image: grafana/loki:latest
-    container_name: sysadmin-loki
-    # Porta removida - acesso apenas via Traefik
-    command: -config.file=/etc/loki/local-config.yaml
-    volumes:
-      - loki_data:/loki
-      - ./loki/loki-config.yml:/etc/loki/local-config.yaml
-    networks:
-      - observability
-      - traefik
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.loki.rule=Host(`${LOKI_DOMAIN}`)
-      - traefik.http.routers.loki.entrypoints=websecure
-      - traefik.http.routers.loki.tls.certresolver=le
-      - traefik.http.routers.loki.middlewares=secure-headers
-      - traefik.http.services.loki.loadbalancer.server.port=3100
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: sysadmin-promtail
-    # NÃO precisa expor nada - apenas envia logs para Loki via rede interna
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - observability
-    depends_on:
-      - loki
-
-  # Serviços de teste/debug (opcionais - use profile 'debug' para ativar)
+    # Serviços de teste/debug (opcionais - use profile 'debug' para ativar)
   whoami:
     image: traefik/whoami
     container_name: sysadmin-whoami
-    profiles:
-      - debug
     labels:
       - traefik.enable=true
       - traefik.http.routers.whoami.rule=Host(`who.${DOMAIN_BASE}`)
@@ -239,3 +123,126 @@ services:
     networks:
       - traefik
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: traefik-cloudflared
+    entrypoint: cloudflared
+    command:
+      - --no-autoupdate
+      - tunnel
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    networks:
+      - traefik
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sysadmin-prometheus
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      # Service discovery: add new targets here
+      - ./prometheus/targets:/etc/prometheus/targets
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - observability
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_DOMAIN}`)
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.routers.prometheus.tls.certresolver=le
+      - traefik.http.routers.prometheus.middlewares=secure-headers
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sysadmin-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - observability
+      - traefik
+    depends_on:
+      - prometheus
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN}`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls.certresolver=le
+      - traefik.http.routers.grafana.middlewares=secure-headers
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: sysadmin-node-exporter
+    pid: host
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - observability
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: sysadmin-cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:latest
+    container_name: sysadmin-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml
+    networks:
+      - observability
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.loki.rule=Host(`${LOKI_DOMAIN}`)
+      - traefik.http.routers.loki.entrypoints=websecure
+      - traefik.http.routers.loki.tls.certresolver=le
+      - traefik.http.routers.loki.middlewares=secure-headers
+      - traefik.http.services.loki.loadbalancer.server.port=3100
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: sysadmin-promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - observability
+    depends_on:
+      - loki
