@@ -32,20 +32,20 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=traefik
-      
+
       # API & Dashboard       
       - --api.dashboard=true
       - --api.insecure=false
 
       # Observability 
-      - "--log.level=INFO"
-      - "--accesslog=true"
+      - --log.level=INFO
+      - --accesslog=true
 
       # Metrics
-      - "--metrics.prometheus=true"
-      - "--metrics.prometheus.entrypoint=metrics"
-      - "--metrics.prometheus.addrouterslabels=true"
-      - "--metrics.prometheus.addserviceslabels=true"
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entrypoint=metrics
+      - --metrics.prometheus.addrouterslabels=true
+      - --metrics.prometheus.addserviceslabels=true
 
       # TLS Certificate Management (Let's Encrypt)
       - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
@@ -63,7 +63,7 @@ services:
     labels:
       # Enable Traefik
       - traefik.enable=true
-      
+
       # Dashboard router
       - traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
@@ -72,14 +72,14 @@ services:
 
       - traefik.http.routers.dashboard.tls.certresolver=le
       - traefik.http.routers.dashboard.middlewares=secure-headers
-      
+
       # Basic‑auth middleware
-      - "traefik.http.middlewares.dashboard-auth.basicauth.users=#{BASIC_AUTH_HASH}"
-      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
+      - traefik.http.middlewares.dashboard-auth.basicauth.users=${BASIC_AUTH_HASH}
+      - traefik.http.routers.dashboard.middlewares=dashboard-auth@docker
 
       # Middleware ip-allowlist
       - traefik.http.middlewares.ip-allowlist.ipallowlist.sourceRange=${IP_ALLOWLIST}
-      
+
       # Middleware secure-headers
       - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
       - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
