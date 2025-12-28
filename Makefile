@@ -11,7 +11,6 @@ help:
 	@echo "  make ps              - Show running containers"
 	@echo "  make health-check    - Check service health"
 	@echo ""
-	@echo "  make open-traefik    - Open Traefik dashboard"
 	@echo "  make open-grafana    - Open Grafana dashboard"
 	@echo "  make open-prometheus - Open Prometheus UI"
 	@echo "  make open-loki       - Open Loki UI"
@@ -50,19 +49,12 @@ health-check:
 	@echo "  Note: Services are accessed via Traefik domains (check .env for domains)"
 	@echo ""
 	@echo "Service URLs (from .env):"
-	@echo "  Traefik:    https://$$(grep TRAEFIK_DOMAIN .env 2>/dev/null | cut -d'=' -f2 || echo 'traefik.example.com')"
 	@echo "  Grafana:    https://$$(grep GRAFANA_DOMAIN .env 2>/dev/null | cut -d'=' -f2 || echo 'grafana.example.com')"
 	@echo "  Prometheus: https://$$(grep PROMETHEUS_DOMAIN .env 2>/dev/null | cut -d'=' -f2 || echo 'prometheus.example.com')"
 	@echo "  Loki:       https://$$(grep LOKI_DOMAIN .env 2>/dev/null | cut -d'=' -f2 || echo 'loki.example.com')"
 
 # UI Access (via Traefik domains)
-open-traefik:
-	@DOMAIN=$$(grep TRAEFIK_DOMAIN .env 2>/dev/null | cut -d'=' -f2 || echo 'traefik.example.com'); \
-	echo "Opening Traefik at https://$$DOMAIN"; \
-	which xdg-open > /dev/null 2>&1 && xdg-open https://$$DOMAIN || \
-	which open > /dev/null 2>&1 && open https://$$DOMAIN || \
-	echo "Please open https://$$DOMAIN in your browser"
-
+# Note: Traefik dashboard is in the revproxy repository
 open-grafana:
 	@DOMAIN=$$(grep GRAFANA_DOMAIN .env 2>/dev/null | cut -d'=' -f2 || echo 'grafana.example.com'); \
 	echo "Opening Grafana at https://$$DOMAIN"; \

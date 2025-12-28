@@ -1,14 +1,11 @@
 # sysadmin
 
 Stack central de infraestrutura para um único host (docker compose) com:
-- Reverse proxy Traefik + Cloudflared (DNS challenge Cloudflare)
 - Observabilidade: Prometheus, Grafana, Loki, Promtail, node-exporter, cAdvisor
 
-## Serviços e suas funções
+> **Nota**: Esta stack depende de uma stack de reverse proxy (Traefik) que deve estar rodando antes de iniciar esta stack.
 
-### Reverse Proxy e Túnel
-- **Traefik**: Reverse proxy moderno que roteia requisições HTTP/HTTPS, gerencia certificados SSL/TLS automaticamente via Let's Encrypt, e expõe dashboards e serviços através de subdomínios configurados.
-- **Cloudflared**: Túnel Cloudflare que permite expor serviços de forma segura sem abrir portas diretamente no firewall, mantendo os serviços protegidos atrás da rede Cloudflare.
+## Serviços e suas funções
 
 ### Observabilidade - Métricas
 - **Prometheus**: Sistema de monitoramento e alertas que coleta e armazena métricas de tempo de série. Scrape métricas de diversos serviços e exportadores.
@@ -24,24 +21,35 @@ Stack central de infraestrutura para um único host (docker compose) com:
 - **whoami**: Serviço de teste/debug que retorna informações sobre requisições HTTP recebidas. Útil para validar configuração do Traefik.
 
 ## Como usar
-1. Copie `env.example` para `.env` e preencha:
-   - `ACME_EMAIL`, `CF_DNS_API_TOKEN`, `CLOUDFLARE_TUNNEL_TOKEN`
-   - `DOMAIN_BASE`, `TRAEFIK_DOMAIN`, `PROMETHEUS_DOMAIN`, `GRAFANA_DOMAIN`, `LOKI_DOMAIN`
-   - `GF_SECURITY_ADMIN_USER`, `GF_SECURITY_ADMIN_PASSWORD`
-   - `IP_ALLOWLIST` (opcional, padrão: localhost + redes privadas)
-   - `BASIC_AUTH_HASH` (hash para autenticação básica do Traefik dashboard)
-2. Garanta que a rede externa `traefik` exista: `docker network create traefik` (uma vez).
-3. Suba: `docker compose up -d` ou `make up`.
 
-## Conectar outras stacks (pmc/arrstack/homelab/nextcloud)
+1. **Certifique-se de que o Traefik está rodando:**
+   - Esta stack depende do Traefik para expor os serviços via HTTPS
+   - Inicie a stack do Traefik antes desta stack
+
+2. **Copie `env.example` para `.env` e preencha:**
+   - `DOMAIN_BASE`, `PROMETHEUS_DOMAIN`, `GRAFANA_DOMAIN`, `LOKI_DOMAIN`
+   - `GF_SECURITY_ADMIN_USER`, `GF_SECURITY_ADMIN_PASSWORD`
+   - `MOUNT_POINT` (opcional, padrão: ./data)
+
+3. **Garanta que a rede externa `traefik` exista:**
+   - Normalmente criada pela stack do Traefik, mas se necessário: `docker network create traefik` (uma vez)
+
+4. **Suba os serviços:**
+   ```bash
+   docker compose up -d
+   ```
+   Ou usando o Makefile:
+   ```bash
+   make up
+   ```
+
+## Conectar outras stacks
 - Adicione seus serviços à rede externa `traefik` no compose/local onde eles vivem.
 - Publique as portas de métricas necessárias (ex.: 9101-9105, 9187/9188, 15692) para que o Prometheus central possa scrapeá-las via `host.docker.internal`.
 - Opcional: adicione labels Traefik nos serviços para expor via subdomínios.
 - Para novos targets Prometheus, crie arquivos em `prometheus/targets/*.yml` (veja `docs/prometheus-targets.md` para detalhes).
 
 ## Serviços e portas
-- **Traefik**: 80/443 (dashboard em `${TRAEFIK_DOMAIN}`)
-- **Cloudflared**: Sem portas expostas (túnel Cloudflare para exposição externa)
 - **Prometheus**: Acesso via `${PROMETHEUS_DOMAIN}` (porta interna 9090, não exposta)
 - **Grafana**: Acesso via `${GRAFANA_DOMAIN}` (porta interna 3000, não exposta)
 - **Loki**: Acesso via `${LOKI_DOMAIN}` (porta interna 3100, não exposta)
@@ -53,9 +61,7 @@ Stack central de infraestrutura para um único host (docker compose) com:
 > **Nota**: Prometheus, Grafana e Loki não expõem portas diretamente para evitar conflitos com outras stacks. O acesso é feito exclusivamente via Traefik através dos subdomínios configurados.
 
 ## Segurança
-- **Traefik Dashboard**: Protegido com autenticação básica e IP allowlist (configurável via `IP_ALLOWLIST` e `BASIC_AUTH_HASH`)
-- **Certificados SSL/TLS**: Gerenciados automaticamente via Let's Encrypt com DNS challenge do Cloudflare
-- **Cloudflared**: Túnel Cloudflare para exposição segura dos serviços sem abrir portas diretamente no firewall
+- **Certificados SSL/TLS**: Gerenciados automaticamente pelo Traefik via Let's Encrypt com DNS challenge do Cloudflare
 - **Redes Docker**: Serviços de observabilidade isolados na rede `observability`, expostos apenas via Traefik
 
 ## Dashboards
@@ -73,8 +79,9 @@ Stack central de infraestrutura para um único host (docker compose) com:
 - `make logs` - Ver logs de todos os serviços
 - `make ps` - Listar containers em execução
 - `make health-check` - Verificar saúde dos serviços
-- `make open-traefik` - Abrir Traefik dashboard no navegador
 - `make open-grafana` - Abrir Grafana no navegador
 - `make open-prometheus` - Abrir Prometheus no navegador
 - `make open-loki` - Abrir Loki no navegador
 - `make debug` - Iniciar com serviços de debug (whoami)
+
+> **Nota**: O Traefik dashboard está na stack do reverse proxy. Acesse-o através da stack que gerencia o Traefik.
